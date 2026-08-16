@@ -16,6 +16,15 @@ async def process_query(user_msg : str, llm_client : llm_client):
     Here's the set of tools you can use
     {TOOLS}
 
+    If you decide to use a tool, respond ONLY with JSON:
+    
+        {{
+        "tool": "tool_name",
+            "arguments": {{
+                ...
+            }}
+        }}
+
     #USER QUERY
     {user_msg}
     """
