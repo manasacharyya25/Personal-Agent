@@ -1,29 +1,37 @@
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from worker import worker
 from job_queue import job_queue
 from job_store import jobs
+from logger import log_message
+from llm_client import llm_client
+from contextlib import asynccontextmanager
+import uuid
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.llm_client = llm_client()
+    asyncio.create_task(worker(app.state.llm_client))
+    yield
 
-@app.on_event("startup")
-async def startup():
-    asyncio.create_task(worker())
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def root():
     return {"messge" : "Working API"}
 
-@app.post("/")
-async def post_task():
+@app.post("/{user_query}")
+async def post_task(user_query: str, bg_task : BackgroundTasks):
     # put a job in the job_store
-    jobs["123"] = {"status" : "queued"}
-    
-    # Add the job_id to the queue
-    await job_queue.put("123")
+    job_id = uuid.uuid4().hex[:3]
+    jobs[job_id] = {"status" : "queued", "query": user_query}
 
-    return {"job_id": "123"}
+    bg_task.add_task(log_message, f"job queued with job id {job_id}")
+    # Add the job_id to the queue
+    await job_queue.put(job_id)
+
+    return {"job_id": job_id}
 
 @app.get("/jobs/{job_id}")
 async def job_status(job_id: str):
-    return jobs[job_id]["status"]
+    return jobs[job_id]
