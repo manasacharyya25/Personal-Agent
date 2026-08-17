@@ -1,6 +1,7 @@
 from logger import log_message
 import os
 from openai import AsyncOpenAI
+from tools import TOOL_REGISTRY
 
 class llm_client:
     def __init__(self):
@@ -15,10 +16,22 @@ class llm_client:
 
         self.client = AsyncOpenAI(api_key=api_key)
 
-    async def send_message(self, msg : str):
+    async def send_message(self, system_prompt : str, user_query: str, tools):
         response = await self.client.responses.create(
             model = self.llm_model,
-            input = msg
+            instructions=system_prompt,
+            input = user_query,
+            tools = tools
         )
 
-        return response.output_text
+        return response    
+
+
+    async def send_subsequent_message(self, previous_call_id: str, tool_result: str):
+        response = await self.client.responses.create(
+                model=self.llm_model,
+                previous_response_id=previous_call_id,
+                input=tool_result,
+            )
+        
+        return response
