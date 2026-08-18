@@ -4,3 +4,4 @@ openai
 sentence_transformers
 asyncpg
 python-dotenv
+psycopg2

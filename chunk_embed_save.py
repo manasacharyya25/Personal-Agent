@@ -6,7 +6,7 @@ def chunk(text: str, chunk_size: int, overlap: int):
     while start < len(text):
         end = start + chunk_size
         chunks.append(text[start:end])
-        start = chunk_size - overlap
+        start = end - overlap
     return chunks
 
 
@@ -20,13 +20,13 @@ def embed(chunks : list[str]) -> list[list[float]]:
 
     return embeddings
 
-async def save_embeddings(db, chunks, embeddings):
+def save_embeddings(db, chunks, embeddings):
     for chunk, embedding in zip(chunks, embeddings):
-        await db.execute(
+        db.execute(
             """
-            INSERT INTO document_chunk(chunk, embedding)
-            VALUES($1, $2)
+            INSERT INTO rhoq_info(content, embedding, source)
+            VALUES(%s, %s, 'rhoq_knowledge.md')
             """,
             chunk,
-            embedding
+            embedding.tolist()
         )

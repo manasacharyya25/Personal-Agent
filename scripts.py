@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 from Database import Database
-from chunk_embed_save import chunk, embed, save
+from chunk_embed_save import chunk, embed, save_embeddings
 
 async def ingest_document(file_path:str):
     db = Database()
@@ -15,7 +15,7 @@ async def ingest_document(file_path:str):
         chunks = chunk(document, 500, 50)
         embeddings = embed(chunks)
 
-        await save_embeddings(db, chunks, embeddings)
+        save_embeddings(db, chunks, embeddings)
 
     except Exception as ex:
         print(f"Exception ingesting document {ex}")
