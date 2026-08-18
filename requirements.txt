@@ -1,3 +1,6 @@
 fastapi
 uvicorn
 openai
+sentence_transformers
+asyncpg
+python-dotenv

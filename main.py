@@ -7,12 +7,18 @@ from logger import log_message
 from llm_client import llm_client
 from contextlib import asynccontextmanager
 import uuid
+from Database import Database
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.db = Database()
+    await app.state.db.connect()
+
     app.state.llm_client = llm_client()
     asyncio.create_task(worker(app.state.llm_client))
     yield
+
+    await app.state.db.close()
 
 app = FastAPI(lifespan=lifespan)
 
