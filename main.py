@@ -12,10 +12,10 @@ from Database import Database
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.db = Database()
-    await app.state.db.connect()
+    app.state.db.connect()
 
     app.state.llm_client = llm_client()
-    asyncio.create_task(worker(app.state.llm_client))
+    asyncio.create_task(worker(app.state.llm_client, app.state.db))
     yield
 
     await app.state.db.close()
@@ -41,3 +41,14 @@ async def post_task(user_query: str, bg_task : BackgroundTasks):
 @app.get("/jobs/{job_id}")
 async def job_status(job_id: str):
     return jobs[job_id]
+
+@app.post("/rag_retrieval/{query}")
+async def get_rag_retrieval(query: str):
+    # put a job in the job_store
+        job_id = uuid.uuid4().hex[:3]
+        jobs[job_id] = {"status" : "queued", "query": query}
+    
+        # Add the job_id to the queue
+        await job_queue.put(job_id)
+    
+        return {"job_id": job_id}

@@ -12,7 +12,7 @@ async def ingest_document(file_path:str):
         with open(file_path, "r", encoding="utf-8") as f:
             document = f.read()
 
-        chunks = chunk(document, 500, 50)
+        chunks = chunk(document, 100, 25)
         embeddings = embed(chunks)
 
         save_embeddings(db, chunks, embeddings)

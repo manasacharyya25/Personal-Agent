@@ -1,8 +1,22 @@
 from llm_client import llm_client
 from tools import TOOLS, TOOL_REGISTRY
 import json
+from Database import Database
+from chunk_embed_save import embed
 
-async def process_query(user_msg : str, llm_client : llm_client):
+async def similarity_search_using_embed(user_msg: str, db: Database):
+    query_embedding = embed([user_msg])[0].tolist()
+
+    results = db.similarity_search(
+        query_embedding,
+        limit=5
+    )
+
+    print("Retrieved chunks:")
+    for row in results:
+        print(row)
+
+async def process_query(user_msg : str, llm_client : llm_client, db: Database):
     # Create Prompt
     system_prompt = f"""
     You are an AI agent.

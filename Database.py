@@ -53,3 +53,24 @@ class Database:
             cursor.execute(query, args)
 
         self.connection.commit()
+
+    def similarity_search(
+        self,
+        embedding: list[float],
+        limit: int = 5
+    ):
+        with self.connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    content,
+                    source,
+                    1 - (embedding <=> %s::vector) AS similarity
+                FROM rhoq_info
+                ORDER BY embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (embedding, embedding, limit)
+            )
+
+            return cursor.fetchall()
