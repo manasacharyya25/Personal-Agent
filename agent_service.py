@@ -45,7 +45,7 @@ async def process_query(user_msg : str, llm_client : llm_client, db: Database):
                 tool_name = item.name
                 tool_args = json.loads(item.arguments)
                 tool = TOOL_REGISTRY[tool_name]
-                tool_res = tool(**tool_args)
+                tool_res = tool(**tool_args, db=db)
     
                 tool_results.append({
                     "type": "function_call_output",

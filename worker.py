@@ -15,7 +15,7 @@ async def worker(llm_client, db):
 
             print(f"Running job {job_id}")
 
-            similarity_result = await similarity_search_using_embed(user_query, db)
+            #similarity_result = await similarity_search_using_embed(user_query, db)
             response = await process_query(user_query, llm_client, db)
 
             jobs[job_id]["status"] = "complete"

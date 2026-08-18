@@ -1,3 +1,5 @@
+from chunk_embed_save import embed
+
 TOOLS = [
     {
         "type": "function",
@@ -85,24 +87,38 @@ TOOLS = [
     }
 ]
 
-def get_new_creators(today_date):
+def get_new_creators(today_date, db):
     print(f"Searching new creators for {today_date}")
     print(f"Found 10 creators")
     print(f"Finished searching")
     return "10 creators found"
 
-def get_rhoq_info(query):
+def get_rhoq_info(query, db):
     print(f"Searching RhoQ Information relevant to {query}")
-    return "RhoQ pricing plan : 10$ monthly, 100$ yearly"
+    query_embedding = embed([query])[0].tolist()
+    
+    results = db.similarity_search(
+        query_embedding,
+        limit=5
+    )
 
-def get_previous_message(current_message):
+    return [
+        {
+            "content": row[0],
+            "source": row[1],
+            "similarity": row[2]
+        }
+        for row in results
+    ]
+
+def get_previous_message(current_message, db):
     print(f"Searching previous message similar to {current_message}")
     return "Previous Message"
 
-def draft_new_messaeg():
+def draft_new_messaeg(db):
     return "New Message : Hi how are you"
 
-def draft_reply(current_message):
+def draft_reply(current_message, db):
     print(f"Drafting message for : {current_message}")
     return "Hi here is the info you requested"
 
