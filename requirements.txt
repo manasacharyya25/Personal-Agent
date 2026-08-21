@@ -5,3 +5,5 @@ sentence_transformers
 asyncpg
 python-dotenv
 psycopg2
+langchain
+langchain-openai
