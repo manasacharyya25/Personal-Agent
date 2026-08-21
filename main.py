@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, File, Form, HTTPException, Header, UploadFile
 from worker import worker
 from job_queue import job_queue
 from job_store import jobs
@@ -28,7 +28,7 @@ app = FastAPI(lifespan=lifespan)
 async def root():
     return {"messge" : "Working API"}
 
-@app.post("/{user_query}")
+@app.post("/notty_api/{user_query}")
 async def post_task(user_query: str, bg_task : BackgroundTasks):
     # put a job in the job_store
     job_id = uuid.uuid4().hex[:3]
@@ -74,3 +74,20 @@ async def query_llm(request : LlmRequestBody):
         )          
           
      return "{'id':1, 'llm_response':'Success', 'created_at':'now', 'call_id':'1234'}"
+
+
+@app.post("/ingest")
+async def ingest_file(file: UploadFile = File(...), title : str = Form(...), x_api_key: str = Header(None)):
+    if x_api_key != "correct_key":
+         raise HTTPException(
+              status_code=401,
+              detail = "Unauthorized"
+         )
+
+    file_content = await file.read()
+
+    return {
+         "name": file.filename,
+         "type": file.content_type,
+         "size": len(file_content)
+    }
