@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 import uuid
 from Database import Database
 from llm_request_body import LlmRequestBody
+from api_response_model import LlmResponseModel
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -54,7 +55,7 @@ async def get_rag_retrieval(query: str):
     
         return {"job_id": job_id}
 
-@app.post("/query_llm")
+@app.post("/query_llm", response_model=LlmResponseModel)
 async def query_llm(request : LlmRequestBody):
      print(f"""
         Request received with System prompt {request.system_prompt}
@@ -62,3 +63,4 @@ async def query_llm(request : LlmRequestBody):
         Top_K {request.top_k}
         Stream {request.stream}
      """)
+     return "{'id':1, 'llm_response':'Success', 'created_at':'now', 'call_id':'1234'}"
