@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from worker import worker
 from job_queue import job_queue
 from job_store import jobs
@@ -63,4 +63,14 @@ async def query_llm(request : LlmRequestBody):
         Top_K {request.top_k}
         Stream {request.stream}
      """)
+
+     if not request.user_prompt:
+        raise HTTPException(
+             status_code=400,
+             detail = {
+                  "message": "Request not complete",
+                  "field": "user_prompt"
+             }
+        )          
+          
      return "{'id':1, 'llm_response':'Success', 'created_at':'now', 'call_id':'1234'}"
