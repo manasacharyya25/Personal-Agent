@@ -10,6 +10,7 @@ import uuid
 from Database import Database
 from llm_request_body import LlmRequestBody
 from api_response_model import LlmResponseModel
+from routers import users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
     await app.state.db.close()
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(users.router)
 
 @app.get("/")
 async def root():
