@@ -1,6 +1,7 @@
 import asyncio
-from fastapi import FastAPI, BackgroundTasks, File, Form, HTTPException, Header, UploadFile, Request
+from fastapi import Depends, FastAPI, BackgroundTasks, File, Form, HTTPException, Header, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
+from dependencies import verify_api_key
 from worker import worker
 from job_queue import job_queue
 from job_store import jobs
@@ -108,13 +109,11 @@ async def query_llm(request : LlmRequestBody):
 
 
 @app.post("/ingest")
-async def ingest_file(file: UploadFile = File(...), title : str = Form(...), x_api_key: str = Header(None)):
-    if x_api_key != "correct_key":
-         raise HTTPException(
-              status_code=401,
-              detail = "Unauthorized"
-         )
-
+async def ingest_file(
+     file: UploadFile = File(...), 
+     title : str = Form(...), 
+     x_api_key: str = Depends(verify_api_key)):
+    
     file_content = await file.read()
 
     return {

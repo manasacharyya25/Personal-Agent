@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     DB_MAX_POOL_SIZE: int
     DB_CONNECTION_STRING: str
 
+    API_AUTH_KEY: str = "correct_key"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"
