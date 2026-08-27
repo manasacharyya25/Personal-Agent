@@ -1,5 +1,6 @@
 import asyncio
 from fastapi import FastAPI, BackgroundTasks, File, Form, HTTPException, Header, UploadFile, Request
+from fastapi.middleware.cors import CORSMiddleware
 from worker import worker
 from job_queue import job_queue
 from job_store import jobs
@@ -44,6 +45,15 @@ async def request_logger(request: Request, call_next):
 
      response.headers["X-Request-ID"] = request_id
      return response
+
+app.add_middleware(
+     CORSMiddleware,
+     allow_credentials=True,
+     allow_headers=["*"],
+     allow_methods=["*"],
+     allow_origins=["http://localhost:3000"]
+)
+
 
 @app.get("/")
 async def root():
