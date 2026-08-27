@@ -1,6 +1,8 @@
 import asyncio
 from fastapi import Depends, FastAPI, BackgroundTasks, File, Form, HTTPException, Header, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from dependencies import verify_api_key
 from worker import worker
 from job_queue import job_queue
@@ -15,6 +17,8 @@ from api_response_model import LlmResponseModel
 from routers import users
 from config.settings import get_settings
 import time
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,10 +33,28 @@ async def lifespan(app: FastAPI):
 
     await app.state.db.close()
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(lifespan=lifespan)
+app.state.limiter = limiter
+
 app.include_router(users.router)
 
+# Define custome Rate Limit Exceeded Handler and Add it to app.state
+async def custom_rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+     return JSONResponse(
+          status_code=429,
+          content={
+               "error": "Rate limit exceeded",
+               "message": f"You have exceeded {exc.limit} requests. Try again shortly.",
+               "retry_after":  "60 seconds"
+          },
+          headers={"Retry-After": "60"}
+     )
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
+
 @app.middleware("http")
+@limiter.limit("10/minute")
 async def request_logger(request: Request, call_next):
      request_id = str(uuid.uuid4())[:8]
      start = time.time()
