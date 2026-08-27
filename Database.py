@@ -3,24 +3,27 @@ import asyncpg
 from dotenv import load_dotenv
 import psycopg2
 
+from config.settings import Settings
+
 load_dotenv()
 
 class Database:
-    def __init__(self):
+    def __init__(self, settings: Settings):
         self.pool = None
         self.connection = None
-        self.host = os.getenv("DB_HOST")
-        self.port = int(os.getenv("DB_PORT", "5432"))
-        self.database = os.getenv("DB_NAME")
-        self.user = os.getenv("DB_USER")
-        self.password = os.getenv("DB_PASSWORD")
+        self.host = settings.DB_HOST
+        self.port = settings.DB_PORT
+        self.database = settings.DB_NAME
+        self.user = settings.DB_USER
+        self.password = settings.DB_PASSWORD
+        self.db_string = settings.DB_CONNECTION_STRING
 
-        self.min_pool_size = int(os.getenv("DB_MIN_POOL_SIZE", "5"))
-        self.max_pool_size = int(os.getenv("DB_MAX_POOL_SIZE", "20"))
+        self.min_pool_size = settings.DB_MIN_POOL_SIZE
+        self.max_pool_size = settings.DB_MAX_POOL_SIZE
 
     def connect(self):
         
-        url = f"postgresql://postgres.risfitksxxuphkigcrnd:{self.password}@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres"
+        url = self.db_string
         self.connection = psycopg2.connect(url)
 
         # self.pool = await asyncpg.create_pool(

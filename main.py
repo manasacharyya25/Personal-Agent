@@ -11,13 +11,16 @@ from Database import Database
 from llm_request_body import LlmRequestBody
 from api_response_model import LlmResponseModel
 from routers import users
+from config.settings import get_settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db = Database()
+    settings = get_settings()
+
+    app.state.db = Database(settings)
     app.state.db.connect()
 
-    app.state.llm_client = llm_client()
+    app.state.llm_client = llm_client(settings)
     asyncio.create_task(worker(app.state.llm_client, app.state.db))
     yield
 
