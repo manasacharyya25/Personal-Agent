@@ -1,5 +1,5 @@
 import asyncio
-from fastapi import FastAPI, BackgroundTasks, File, Form, HTTPException, Header, UploadFile
+from fastapi import FastAPI, BackgroundTasks, File, Form, HTTPException, Header, UploadFile, Request
 from worker import worker
 from job_queue import job_queue
 from job_store import jobs
@@ -12,6 +12,7 @@ from llm_request_body import LlmRequestBody
 from api_response_model import LlmResponseModel
 from routers import users
 from config.settings import get_settings
+import time
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,6 +29,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(users.router)
+
+@app.middleware("http")
+async def request_logger(request: Request, call_next):
+     request_id = str(uuid.uuid4())[:8]
+     start = time.time()
+
+     response = await call_next(request)
+
+     duration = time.time() - start
+     status = response.status_code
+
+     print(f"[{request_id}] {request.method} {request.url.path} {status} ({duration:.3f}sec)")
+
+     response.headers["X-Request-ID"] = request_id
+     return response
 
 @app.get("/")
 async def root():
