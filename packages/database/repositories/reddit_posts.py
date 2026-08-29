@@ -1,0 +1,1 @@
+"""Scraped Reddit post repository."""

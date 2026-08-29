@@ -1,0 +1,1 @@
+"""Document (knowledge chunk) repository."""
