@@ -3,3 +3,16 @@ name = "personal-agent"
 version = "0.1.0"
 description = "Personal agent — Phase 1"
 requires-python = ">=3.11"
+dependencies = [
+    "playwright",
+    "psycopg2-binary",
+    "pydantic-settings",
+    "python-dotenv",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["apps*", "packages*"]

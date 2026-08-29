@@ -7,8 +7,27 @@ Learning experiments from FastAPI / RAG are archived in `source/` and still exis
 ## Phase 1 layout
 
 - `apps/agent` — FastAPI (dashboard API + per-post chat)
-- `apps/extraction` — Reddit scraper
+- `apps/extraction` — Reddit scraper (Playwright)
 - `apps/evaluator` — lead + job matching
-- `knowledge/` — RhoQ, ThoughtSpace, personal skills
+- `knowledge/` — RhoQ, Thoughtspace, personal skills
 - `dashboard/frontend` — React UI
 - `ingestion/` — chunk / embed knowledge docs
+
+Scraper design: `Implementation/phase1-2026-08-29.md`
+
+## Reddit scraper
+
+Copy `.env.example` to `.env` and set `DB_CONNECTION_STRING`.
+
+```text
+pip install -e .
+playwright install chromium
+python -m apps.extraction.main --migrate
+```
+
+Insert at least one row into `pa_reddit_sources` or `pa_reddit_search_queries`, then:
+
+```text
+python -m apps.extraction.main
+```
+

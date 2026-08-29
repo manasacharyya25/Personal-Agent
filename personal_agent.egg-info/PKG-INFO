@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: personal-agent
+Version: 0.1.0
+Summary: Personal agent — Phase 1
+Requires-Python: >=3.11
+Requires-Dist: playwright
+Requires-Dist: psycopg2-binary
+Requires-Dist: pydantic-settings
+Requires-Dist: python-dotenv

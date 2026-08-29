@@ -1,3 +1,4 @@
 # Phase 1 database migrations
 
-Tables to add when we implement: documents, reddit_posts, evaluations, threads.
+- `001_reddit_ingestion.sql` — categories, sources, search queries, discovered posts, discovery methods, ingestion jobs
+
