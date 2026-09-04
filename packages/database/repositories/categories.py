@@ -1,4 +1,5 @@
 from psycopg2 import errors as pg_errors
+from psycopg2.extras import Json
 
 from packages.database.database import Database
 
@@ -11,25 +12,65 @@ class DuplicateNameError(Exception):
     pass
 
 
+def _metrics(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return []
+
+
 def list_categories(db: Database) -> list[dict]:
     return db.fetch_all(
         """
-        SELECT id, name, created_at
+        SELECT id, name, purpose, prompt, examples, evaluation_metrics, active, created_at
         FROM pa_categories
         ORDER BY name ASC
         """
     )
 
 
-def create_category(db: Database, name: str) -> dict:
+def list_ready_categories(db: Database) -> list[dict]:
+    rows = db.fetch_all(
+        """
+        SELECT id, name, purpose, prompt, examples, evaluation_metrics, active
+        FROM pa_categories
+        WHERE active = TRUE
+          AND prompt IS NOT NULL
+          AND btrim(prompt) <> ''
+          AND jsonb_typeof(evaluation_metrics) = 'array'
+          AND jsonb_array_length(evaluation_metrics) > 0
+        ORDER BY name ASC
+        """
+    )
+    return rows
+
+
+def create_category(
+    db: Database,
+    name: str,
+    *,
+    purpose: str | None = None,
+    prompt: str | None = None,
+    examples: str | None = None,
+    evaluation_metrics: list | None = None,
+    active: bool = True,
+) -> dict:
     try:
         row = db.execute_returning(
             """
-            INSERT INTO pa_categories (name)
-            VALUES (%s)
-            RETURNING id, name, created_at
+            INSERT INTO pa_categories (name, purpose, prompt, examples, evaluation_metrics, active)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, name, purpose, prompt, examples, evaluation_metrics, active, created_at
             """,
-            (name.strip(),),
+            (
+                name.strip(),
+                purpose,
+                prompt,
+                examples,
+                Json(_metrics(evaluation_metrics)),
+                active,
+            ),
         )
         return row
     except pg_errors.UniqueViolation:
@@ -37,20 +78,49 @@ def create_category(db: Database, name: str) -> dict:
         raise DuplicateNameError(name)
 
 
-def rename_category(db: Database, category_id: int, name: str) -> dict | None:
+def update_category(
+    db: Database,
+    category_id: int,
+    *,
+    name: str | None = None,
+    purpose: str | None = None,
+    prompt: str | None = None,
+    examples: str | None = None,
+    evaluation_metrics: list | None = None,
+    active: bool | None = None,
+) -> dict | None:
+    row = db.fetch_one("SELECT * FROM pa_categories WHERE id = %s", (category_id,))
+    if not row:
+        return None
+    next_metrics = (
+        evaluation_metrics if evaluation_metrics is not None else row["evaluation_metrics"]
+    )
     try:
         return db.execute_returning(
             """
             UPDATE pa_categories
-            SET name = %s
+            SET name = %s,
+                purpose = %s,
+                prompt = %s,
+                examples = %s,
+                evaluation_metrics = %s,
+                active = %s
             WHERE id = %s
-            RETURNING id, name, created_at
+            RETURNING id, name, purpose, prompt, examples, evaluation_metrics, active, created_at
             """,
-            (name.strip(), category_id),
+            (
+                name if name is not None else row["name"],
+                purpose if purpose is not None else row["purpose"],
+                prompt if prompt is not None else row["prompt"],
+                examples if examples is not None else row["examples"],
+                Json(_metrics(next_metrics)),
+                active if active is not None else row["active"],
+                category_id,
+            ),
         )
     except pg_errors.UniqueViolation:
         db.connection.rollback()
-        raise DuplicateNameError(name)
+        raise DuplicateNameError(name or row["name"])
 
 
 def delete_category(db: Database, category_id: int) -> bool:

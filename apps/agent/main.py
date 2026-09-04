@@ -63,7 +63,17 @@ def list_categories(db: Database = Depends(get_db)):
 @app.post("/api/categories", status_code=201)
 def create_category(body: CategoryCreate, db: Database = Depends(get_db)):
     try:
-        return jsonable(category_repo.create_category(db, body.name))
+        return jsonable(
+            category_repo.create_category(
+                db,
+                body.name,
+                purpose=body.purpose,
+                prompt=body.prompt,
+                examples=body.examples,
+                evaluation_metrics=[m.model_dump() for m in body.evaluation_metrics],
+                active=body.active,
+            )
+        )
     except DuplicateNameError:
         raise HTTPException(status_code=409, detail="Category already exists")
 
@@ -73,7 +83,20 @@ def update_category(
     category_id: int, body: CategoryUpdate, db: Database = Depends(get_db)
 ):
     try:
-        row = category_repo.rename_category(db, category_id, body.name)
+        row = category_repo.update_category(
+            db,
+            category_id,
+            name=body.name,
+            purpose=body.purpose,
+            prompt=body.prompt,
+            examples=body.examples,
+            evaluation_metrics=(
+                [m.model_dump() for m in body.evaluation_metrics]
+                if body.evaluation_metrics is not None
+                else None
+            ),
+            active=body.active,
+        )
     except DuplicateNameError:
         raise HTTPException(status_code=409, detail="Category already exists")
     if not row:

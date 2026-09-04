@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
+    "openai",
     "playwright",
     "psycopg2-binary",
     "pydantic-settings",

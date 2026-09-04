@@ -19,10 +19,10 @@ async function request(path, options = {}) {
 
 export const api = {
   categories: () => request("/categories"),
-  createCategory: (name) =>
-    request("/categories", { method: "POST", body: JSON.stringify({ name }) }),
-  renameCategory: (id, name) =>
-    request(`/categories/${id}`, { method: "PATCH", body: JSON.stringify({ name }) }),
+  createCategory: (body) =>
+    request("/categories", { method: "POST", body: JSON.stringify(body) }),
+  updateCategory: (id, body) =>
+    request(`/categories/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteCategory: (id) => request(`/categories/${id}`, { method: "DELETE" }),
 
   sources: () => request("/reddit/sources"),

@@ -17,12 +17,12 @@ from .reddit import run_reddit_ingestion
 
 logger = get_logger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
-MIGRATION = ROOT / "migrations" / "001_reddit_ingestion.sql"
+MIGRATIONS = ROOT / "migrations"
 
 
 def migrate(db: Database) -> None:
-    db.apply_migration(MIGRATION)
-    logger.info("Applied %s", MIGRATION.name)
+    applied = db.apply_all_migrations(MIGRATIONS)
+    logger.info("Applied %s", ", ".join(applied))
 
 
 def scrape(db: Database) -> None:

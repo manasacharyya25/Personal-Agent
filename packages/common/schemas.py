@@ -18,8 +18,27 @@ def jsonable(row: dict | None) -> dict | None:
     return out
 
 
+class EvaluationMetric(BaseModel):
+    key: str = Field(min_length=1, max_length=80)
+    label: str = Field(min_length=1, max_length=120)
+    definition: str = Field(min_length=1, max_length=500)
+
+    @field_validator("key", "label", "definition")
+    @classmethod
+    def strip_fields(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("required")
+        return cleaned
+
+
 class CategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
+    purpose: str | None = None
+    prompt: str | None = None
+    examples: str | None = None
+    evaluation_metrics: list[EvaluationMetric] = Field(default_factory=list)
+    active: bool = True
 
     @field_validator("name")
     @classmethod
@@ -31,11 +50,18 @@ class CategoryCreate(BaseModel):
 
 
 class CategoryUpdate(BaseModel):
-    name: str = Field(min_length=1, max_length=80)
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    purpose: str | None = None
+    prompt: str | None = None
+    examples: str | None = None
+    evaluation_metrics: list[EvaluationMetric] | None = None
+    active: bool | None = None
 
     @field_validator("name")
     @classmethod
-    def strip_name(cls, value: str) -> str:
+    def strip_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         cleaned = value.strip()
         if not cleaned:
             raise ValueError("name is required")

@@ -251,12 +251,24 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 10px 12px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.metric-row {
+  display: grid;
+  grid-template-columns: 0.8fr 1.4fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .btn {

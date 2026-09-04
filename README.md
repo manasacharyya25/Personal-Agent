@@ -8,7 +8,11 @@ Learning experiments from FastAPI / RAG are archived in `source/` and still exis
 
 - `apps/agent` — FastAPI (dashboard API + per-post chat)
 - `apps/extraction` — Reddit scraper (Playwright)
-- `apps/evaluator` — lead + job matching
+- `apps/evaluator` — score posts against category criteria
+
+Scraper: `Implementation/phase1-2026-08-29.md`  
+Dashboard: `Implementation/phase1-dashboard.md`  
+Evaluator: `Implementation/phase1-evaluator.md`
 - `knowledge/` — RhoQ, Thoughtspace, personal skills
 - `dashboard/frontend` — React UI
 - `ingestion/` — chunk / embed knowledge docs
@@ -37,4 +41,15 @@ npm run dev
 ```
 
 Open http://localhost:5173 — Overview and Chat are mock; Reddit config writes to the database.
+
+## Evaluator
+
+Fill purpose, prompt, examples, and criteria on each category (Reddit panel → Edit). Then:
+
+```text
+python -m apps.evaluator.main --migrate
+python -m apps.evaluator.main --limit 20
+```
+
+Requires `LLM_API_KEY` in `.env`.
 

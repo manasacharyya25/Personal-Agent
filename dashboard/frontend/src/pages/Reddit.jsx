@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import CategoryEditor from "./CategoryEditor.jsx";
 
 const TIME_FILTERS = ["hour", "day", "week", "month", "year", "all"];
 
@@ -15,6 +16,7 @@ export default function Reddit() {
   const [query, setQuery] = useState("");
   const [searchCategory, setSearchCategory] = useState("");
   const [timeFilter, setTimeFilter] = useState("week");
+  const [openCategory, setOpenCategory] = useState(null);
 
   const hasCategories = categories.length > 0;
   const locked = !ready || !hasCategories;
@@ -74,7 +76,7 @@ export default function Reddit() {
           onSubmit={(e) => {
             e.preventDefault();
             run(async () => {
-              await api.createCategory(categoryName);
+              await api.createCategory({ name: categoryName });
               setCategoryName("");
             });
           }}
@@ -96,6 +98,7 @@ export default function Reddit() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Active</th>
               <th />
             </tr>
           </thead>
@@ -103,9 +106,19 @@ export default function Reddit() {
             {categories.map((cat) => (
               <tr key={cat.id}>
                 <td>{cat.name}</td>
+                <td>{cat.active === false ? "no" : "yes"}</td>
                 <td>
                   <button
+                    className="btn ghost"
+                    onClick={() =>
+                      setOpenCategory(openCategory === cat.id ? null : cat.id)
+                    }
+                  >
+                    {openCategory === cat.id ? "Close" : "Edit"}
+                  </button>
+                  <button
                     className="btn danger"
+                    style={{ marginLeft: 8 }}
                     onClick={() => run(() => api.deleteCategory(cat.id))}
                   >
                     Delete
@@ -115,6 +128,20 @@ export default function Reddit() {
             ))}
           </tbody>
         </table>
+        {categories
+          .filter((cat) => cat.id === openCategory)
+          .map((cat) => (
+            <CategoryEditor
+              key={cat.id}
+              category={cat}
+              onSave={(body) =>
+                run(async () => {
+                  await api.updateCategory(cat.id, body);
+                  setOpenCategory(null);
+                })
+              }
+            />
+          ))}
       </div>
 
       <div className={`disabled-block ${locked ? "is-off" : ""}`}>

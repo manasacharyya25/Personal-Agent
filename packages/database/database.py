@@ -19,9 +19,20 @@ class Database:
 
     def apply_migration(self, path: Path) -> None:
         sql = path.read_text(encoding="utf-8")
-        with self.connection.cursor() as cursor:
-            cursor.execute(sql)
-        self.connection.commit()
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(sql)
+            self.connection.commit()
+        except Exception:
+            self.connection.rollback()
+            raise
+
+    def apply_all_migrations(self, folder: Path) -> list[str]:
+        applied = []
+        for path in sorted(folder.glob("*.sql")):
+            self.apply_migration(path)
+            applied.append(path.name)
+        return applied
 
     def execute(self, query: str, params=None) -> None:
         try:

@@ -6,6 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     DB_CONNECTION_STRING: str
 
+    LLM_API_KEY: str | None = None
+    LLM_MODEL: str = "gpt-4o-mini"
+
     REDDIT_REQUEST_DELAY_SECONDS: float = 3.0
     REDDIT_MAX_RETRIES: int = 3
     REDDIT_MAX_PAGES_PER_TARGET: int = 5
