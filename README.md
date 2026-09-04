@@ -13,7 +13,8 @@ Learning experiments from FastAPI / RAG are archived in `source/` and still exis
 - `dashboard/frontend` — React UI
 - `ingestion/` — chunk / embed knowledge docs
 
-Scraper design: `Implementation/phase1-2026-08-29.md`
+Scraper design: `Implementation/phase1-2026-08-29.md`  
+Dashboard: `Implementation/phase1-dashboard.md`
 
 ## Reddit scraper
 
@@ -23,11 +24,17 @@ Copy `.env.example` to `.env` and set `DB_CONNECTION_STRING`.
 pip install -e .
 playwright install chromium
 python -m apps.extraction.main --migrate
-```
-
-Insert at least one row into `pa_reddit_sources` or `pa_reddit_search_queries`, then:
-
-```text
 python -m apps.extraction.main
 ```
+
+## Dashboard
+
+```text
+uvicorn apps.agent.main:app --reload
+cd dashboard/frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 — Overview and Chat are mock; Reddit config writes to the database.
 

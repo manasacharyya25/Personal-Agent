@@ -68,9 +68,7 @@ CREATE TABLE IF NOT EXISTS pa_reddit_post_discovery_method (
     UNIQUE (post_id, discovery_method, discovery_query)
 );
 
-INSERT INTO pa_categories (name)
-VALUES ('RhoQ'), ('ThoughtSpace'), ('Job'), ('AI')
-ON CONFLICT (name) DO NOTHING;
+-- Categories are created in the dashboard. Do not seed them here.
 
 -- Example sources / searches (edit or insert your own):
 -- INSERT INTO pa_reddit_sources (subreddit, category_id, added_by)

@@ -24,9 +24,13 @@ class Database:
         self.connection.commit()
 
     def execute(self, query: str, params=None) -> None:
-        with self.connection.cursor() as cursor:
-            cursor.execute(query, params)
-        self.connection.commit()
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, params)
+            self.connection.commit()
+        except Exception:
+            self.connection.rollback()
+            raise
 
     def fetch_all(self, query: str, params=None) -> list[dict]:
         with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -39,8 +43,12 @@ class Database:
             return cursor.fetchone()
 
     def execute_returning(self, query: str, params=None) -> dict | None:
-        with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(query, params)
-            row = cursor.fetchone()
-        self.connection.commit()
-        return row
+        try:
+            with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query, params)
+                row = cursor.fetchone()
+            self.connection.commit()
+            return row
+        except Exception:
+            self.connection.rollback()
+            raise
