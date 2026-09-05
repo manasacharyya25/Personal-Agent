@@ -78,6 +78,7 @@ Score posts:
 python -m apps.extraction.main --migrate
 python -m apps.evaluator.main
 python -m apps.evaluator.main --limit 20
+python -m apps.evaluator.main --category "Job Search" --limit 20
 ```
 
 Scoring uses local Ollama (`LLM_MODEL` and `OLLAMA_BASE_URL` in `.env`). `--dump-prompts` does not.

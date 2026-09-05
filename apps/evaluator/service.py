@@ -120,17 +120,26 @@ def mean_score(scores: dict) -> float:
     return round(sum(values) / len(values), 3)
 
 
-def run_evaluation(db: Database, llm: LlmClient, job_id: int, limit: int) -> int:
-    pairs = eval_repo.list_pending_pairs(db, limit)
+def run_evaluation(
+    db: Database,
+    llm: LlmClient,
+    job_id: int,
+    limit: int,
+    category_id: int | None = None,
+) -> int:
+    pairs = eval_repo.list_pending_pairs(db, limit, category_id=category_id)
     logger.info("Evaluating %s post/category pairs", len(pairs))
     done = 0
     for pair in pairs:
         prompt = build_prompt(pair)
         result = llm.complete_json(prompt)
-        scores = result.get("scores") or {}
-        if not isinstance(scores, dict):
-            scores = {}
         reason = str(result.get("reason") or "")
+        scores = {}
+        raw = result.get("user_interest")
+        try:
+            scores["user_interest"] = float(raw)
+        except (TypeError, ValueError):
+            pass
         mean = mean_score(scores)
         eval_repo.upsert_evaluation(
             db,

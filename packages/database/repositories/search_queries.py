@@ -101,12 +101,14 @@ def delete_search_query(db: Database, query_id: int) -> bool:
 def list_active_search_queries(db: Database) -> list[RedditSearchQuery]:
     rows = db.fetch_all(
         """
-        SELECT id, query, time_filter, category_id, active, priority,
-               last_seen_post_id, last_seen_created_at,
-               pagination_state, last_scanned_at
-        FROM pa_reddit_search_queries
-        WHERE active = TRUE
-        ORDER BY priority DESC, id ASC
+        SELECT q.id, q.query, q.time_filter, q.category_id, q.active, q.priority,
+               q.last_seen_post_id, q.last_seen_created_at,
+               q.pagination_state, q.last_scanned_at
+        FROM pa_reddit_search_queries q
+        JOIN pa_categories c ON c.id = q.category_id
+        WHERE q.active = TRUE
+          AND c.active = TRUE
+        ORDER BY q.priority DESC, q.id ASC
         """
     )
     return [_query_from_row(row) for row in rows]

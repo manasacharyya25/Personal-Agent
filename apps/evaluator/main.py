@@ -10,6 +10,7 @@ from packages.common.config import get_settings
 from packages.common.logger import get_logger
 from packages.database.database import Database
 from packages.database.repositories import jobs as job_repo
+from packages.database.repositories.categories import get_category_by_name
 from packages.llm.client import LlmClient
 
 from .service import dump_prompts, run_evaluation
@@ -31,8 +32,16 @@ def dump_prompt_files(db: Database, limit: int, out_dir: Path) -> None:
     logger.info("Wrote %s prompt files under %s", len(written), out_dir)
 
 
-def evaluate(db: Database, limit: int) -> None:
+def evaluate(db: Database, limit: int, category: str | None = None) -> None:
     settings = get_settings()
+    category_id = None
+    if category:
+        row = get_category_by_name(db, category)
+        if not row:
+            raise SystemExit(f"Category not found: {category}")
+        category_id = row["id"]
+        logger.info("Filtering to category %s (id %s)", row["name"], category_id)
+
     job_id = job_repo.create_job(db, "evaluate")
     job_repo.mark_running(db, job_id)
     logger.info(
@@ -43,7 +52,7 @@ def evaluate(db: Database, limit: int) -> None:
     )
     try:
         llm = LlmClient(settings.LLM_MODEL, settings.OLLAMA_BASE_URL)
-        done = run_evaluation(db, llm, job_id, limit)
+        done = run_evaluation(db, llm, job_id, limit, category_id=category_id)
         job_repo.mark_completed(db, job_id)
         logger.info("Evaluate job %s completed (%s pairs)", job_id, done)
     except Exception:
@@ -68,6 +77,10 @@ def main() -> None:
         help="Folder for --dump-prompts files",
     )
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument(
+        "--category",
+        help="Only evaluate posts for this category name",
+    )
     args = parser.parse_args()
 
     settings = get_settings()
@@ -79,7 +92,7 @@ def main() -> None:
         elif args.dump_prompts:
             dump_prompt_files(db, args.limit or 10, args.out)
         else:
-            evaluate(db, args.limit or 50)
+            evaluate(db, args.limit or 50, category=args.category)
     finally:
         db.close()
 

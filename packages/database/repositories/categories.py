@@ -44,6 +44,20 @@ def list_ready_categories(db: Database) -> list[dict]:
     return rows
 
 
+def get_category_by_name(db: Database, name: str) -> dict | None:
+    cleaned = (name or "").strip()
+    if not cleaned:
+        return None
+    return db.fetch_one(
+        """
+        SELECT id, name, purpose, prompt, examples, evaluation_metrics, active
+        FROM pa_categories
+        WHERE lower(name) = lower(%s)
+        """,
+        (cleaned,),
+    )
+
+
 def create_category(
     db: Database,
     name: str,

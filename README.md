@@ -57,6 +57,7 @@ Writes up to 10 mixed subreddit/search posts to `output/evaluator-prompts/`. The
 ```text
 python -m apps.evaluator.main --migrate
 python -m apps.evaluator.main --limit 20
+python -m apps.evaluator.main --category "RhoQ Promotion on App Promption Forums" --limit 20
 ```
 
 Scoring uses local Ollama (`qwen3:4b-instruct` at `http://localhost:11434` by default).

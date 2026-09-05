@@ -3,7 +3,11 @@ from psycopg2.extras import Json
 from packages.database.database import Database
 
 
-def list_pending_pairs(db: Database, limit: int) -> list[dict]:
+def list_pending_pairs(
+    db: Database,
+    limit: int,
+    category_id: int | None = None,
+) -> list[dict]:
     """Posts paired only with categories on the subreddit or search that found them."""
     return db.fetch_all(
         """
@@ -39,6 +43,7 @@ def list_pending_pairs(db: Database, limit: int) -> list[dict]:
         WHERE c.active = TRUE
           AND c.prompt IS NOT NULL
           AND btrim(c.prompt) <> ''
+          AND (%s IS NULL OR c.id = %s)
           AND NOT EXISTS (
               SELECT 1
               FROM pa_post_evaluations e
@@ -47,7 +52,7 @@ def list_pending_pairs(db: Database, limit: int) -> list[dict]:
         ORDER BY p.first_discovered_at DESC, c.id ASC
         LIMIT %s
         """,
-        (limit,),
+        (category_id, category_id, limit),
     )
 
 

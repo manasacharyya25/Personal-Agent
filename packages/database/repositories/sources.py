@@ -93,12 +93,14 @@ def delete_source(db: Database, source_id: int) -> bool:
 def list_active_sources(db: Database) -> list[RedditSource]:
     rows = db.fetch_all(
         """
-        SELECT id, subreddit, category_id, active, priority,
-               last_seen_post_id, last_seen_created_at,
-               pagination_state, last_scanned_at
-        FROM pa_reddit_sources
-        WHERE active = TRUE
-        ORDER BY priority DESC, id ASC
+        SELECT s.id, s.subreddit, s.category_id, s.active, s.priority,
+               s.last_seen_post_id, s.last_seen_created_at,
+               s.pagination_state, s.last_scanned_at
+        FROM pa_reddit_sources s
+        JOIN pa_categories c ON c.id = s.category_id
+        WHERE s.active = TRUE
+          AND c.active = TRUE
+        ORDER BY s.priority DESC, s.id ASC
         """
     )
     return [_source_from_row(row) for row in rows]
