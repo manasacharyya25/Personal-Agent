@@ -2,8 +2,8 @@
 
 React shell + FastAPI (`apps/agent`). Left sidebar is the app switcher; more tabs come later without changing the layout.
 
-**Live now:** Reddit config CRUD.  
-**Mock now:** Overview (Handoff-shaped) and Chat.
+**Live now:** Overview (scored posts) and Reddit config CRUD.  
+**Mock now:** Chat.
 
 ## Shell
 
@@ -13,19 +13,11 @@ React shell + FastAPI (`apps/agent`). Left sidebar is the app switcher; more tab
 
 API lives on the agent app, not a second `dashboard/api`. Frontend: `dashboard/frontend`.
 
-## 1. Overview (mock)
+## 1. Overview (live)
 
-Shows the product as described in `Handoff.md`, not live evaluator data.
+Lists `pa_post_evaluations` joined to posts, highest `mean_score` first. Filter by category. Expand body and open the Reddit URL.
 
-- Pipeline: Extraction → DB → Evaluator → Notify you → Agent
-- Latest ingestion snapshot (status, when, error) — mocked until wired
-- Reddit: RhoQ leads, job posts, AI / small-business outreach
-- LinkedIn / Upwork: jobs + content to restack
-- Instagram: RhoQ users, fitness creators, content for X
-- X: replies, scheduled posts, engagement
-- Slack → WhatsApp: important messages
-- Vercel / Supabase: analytics deltas, new signups / plans / posts / lives
-- Evaluator buckets: Job ↔ skills, Lead ↔ RhoQ / ThoughtSpace, content scoring
+Empty until the evaluator has written scores.
 
 ## 2. Edit Reddit (live)
 
@@ -66,6 +58,5 @@ cd dashboard/frontend && npm run dev
 
 - Running the scraper from the UI
 - Per-post chat / drafts
-- Evaluator
 - Actor / posting
 

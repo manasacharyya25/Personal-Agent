@@ -33,14 +33,16 @@ def dump_prompt_files(db: Database, limit: int, out_dir: Path) -> None:
 
 def evaluate(db: Database, limit: int) -> None:
     settings = get_settings()
-    if not settings.LLM_API_KEY:
-        raise SystemExit("LLM_API_KEY is missing from .env")
-
     job_id = job_repo.create_job(db, "evaluate")
     job_repo.mark_running(db, job_id)
-    logger.info("Evaluate job %s running", job_id)
+    logger.info(
+        "Evaluate job %s running (%s @ %s)",
+        job_id,
+        settings.LLM_MODEL,
+        settings.OLLAMA_BASE_URL,
+    )
     try:
-        llm = LlmClient(settings.LLM_API_KEY, settings.LLM_MODEL)
+        llm = LlmClient(settings.LLM_MODEL, settings.OLLAMA_BASE_URL)
         done = run_evaluation(db, llm, job_id, limit)
         job_repo.mark_completed(db, job_id)
         logger.info("Evaluate job %s completed (%s pairs)", job_id, done)

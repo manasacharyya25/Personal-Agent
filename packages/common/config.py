@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     DB_CONNECTION_STRING: str
 
-    LLM_API_KEY: str | None = None
-    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_MODEL: str = "qwen3:4b-instruct"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
 
     REDDIT_REQUEST_DELAY_SECONDS: float = 3.0
     REDDIT_POST_DELAY_MIN_SECONDS: float = 5.0

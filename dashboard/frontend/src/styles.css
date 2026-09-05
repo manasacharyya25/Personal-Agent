@@ -295,6 +295,54 @@ textarea {
   cursor: not-allowed;
 }
 
+a.btn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.post-card h3 {
+  margin: 0 0 4px;
+}
+
+.post-head {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.post-reason {
+  margin: 12px 0 0;
+  line-height: 1.45;
+}
+
+.score-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.post-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.post-body {
+  margin: 12px 0 0;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

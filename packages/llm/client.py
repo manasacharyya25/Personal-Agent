@@ -1,19 +1,58 @@
 import json
+import re
 
-from openai import OpenAI
+from langchain_core.messages import HumanMessage
+from langchain_ollama import ChatOllama
+
+
+def _ollama_base_url(url: str) -> str:
+    base = (url or "").strip().rstrip("/")
+    if base.endswith("/v1"):
+        base = base[:-3].rstrip("/")
+    return base or "http://localhost:11434"
+
+
+def _content_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and item.get("text"):
+                parts.append(str(item["text"]))
+        return "".join(parts)
+    return str(content)
+
+
+def _parse_json(text: str) -> dict:
+    cleaned = (text or "").strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        if not match:
+            return {}
+        try:
+            data = json.loads(match.group(0))
+        except json.JSONDecodeError:
+            return {}
+    return data if isinstance(data, dict) else {}
 
 
 class LlmClient:
-    def __init__(self, api_key: str, model: str):
-        self.client = OpenAI(api_key=api_key)
-        self.model = model
+    def __init__(self, model: str, base_url: str):
+        self.model = ChatOllama(
+            model=model,
+            base_url=_ollama_base_url(base_url),
+            temperature=0,
+            format="json",
+        )
 
     def complete_json(self, prompt: str) -> dict:
-        response = self.client.chat.completions.create(
-            model=self.model,
-            temperature=0,
-            response_format={"type": "json_object"},
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = response.choices[0].message.content or "{}"
-        return json.loads(text)
+        response = self.model.invoke([HumanMessage(content=prompt)])
+        return _parse_json(_content_text(response.content))

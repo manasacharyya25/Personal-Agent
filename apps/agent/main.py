@@ -18,6 +18,7 @@ from packages.common.schemas import (
 )
 from packages.database.database import Database
 from packages.database.repositories import categories as category_repo
+from packages.database.repositories import evaluations as eval_repo
 from packages.database.repositories import search_queries as search_repo
 from packages.database.repositories import sources as source_repo
 from packages.database.repositories.categories import (
@@ -50,9 +51,22 @@ def get_db() -> Database:
     return app.state.db
 
 
+# Overview reads scored posts from /api/evaluations.
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True}
+
+
+@app.get("/api/evaluations")
+def list_evaluations(
+    db: Database = Depends(get_db),
+    category_id: int | None = None,
+    limit: int = 100,
+):
+    cap = min(max(limit, 1), 200)
+    return [jsonable(row) for row in eval_repo.list_evaluations(db, category_id=category_id, limit=cap)]
 
 
 @app.get("/api/categories")

@@ -41,4 +41,12 @@ export const api = {
       body: JSON.stringify(body),
     }),
   deleteSearch: (id) => request(`/reddit/search-queries/${id}`, { method: "DELETE" }),
+
+  evaluations: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.category_id) query.set("category_id", String(params.category_id));
+    if (params.limit) query.set("limit", String(params.limit));
+    const suffix = query.toString() ? `?${query}` : "";
+    return request(`/evaluations${suffix}`);
+  },
 };

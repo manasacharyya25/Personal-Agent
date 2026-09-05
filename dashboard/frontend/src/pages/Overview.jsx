@@ -1,104 +1,126 @@
-const PIPELINE = ["Extraction", "DB", "Evaluator", "Notify you", "Agent"];
+import { useEffect, useState } from "react";
+import { api } from "../api";
 
-const REDDIT = [
-  { label: "RhoQ leads", value: "12", note: "Fitness community / creators" },
-  { label: "Job posts", value: "7", note: "Match vs your skills.md" },
-  { label: "AI / SMB", value: "4", note: "Agentic workflow interest" },
-];
-
-const PLATFORMS = [
-  {
-    title: "LinkedIn / Upwork",
-    items: ["Jobs to apply", "Posts worth restacking on X"],
-  },
-  {
-    title: "Instagram",
-    items: ["RhoQ-interested users", "Fitness creators to approach", "Posts for X"],
-  },
-  {
-    title: "X",
-    items: ["Replies due", "Scheduled posts", "Engagement by time"],
-  },
-  {
-    title: "Slack → WhatsApp",
-    items: ["Important threads flagged", "Nothing sent until you confirm"],
-  },
-  {
-    title: "Vercel / Supabase",
-    items: ["Traffic deltas", "New signups / plans / posts / lives"],
-  },
-];
+function formatScore(value) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return "—";
+  return n.toFixed(2);
+}
 
 export default function Overview() {
+  const [categories, setCategories] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [categoryId, setCategoryId] = useState("");
+  const [openId, setOpenId] = useState(null);
+  const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
+
+  async function load(nextCategory = categoryId) {
+    setError("");
+    const params = { limit: 100 };
+    if (nextCategory) params.category_id = nextCategory;
+    const cats = await api.categories();
+    setCategories(cats);
+    const rows = await api.evaluations(params);
+    setPosts(rows);
+    setReady(true);
+  }
+
+  useEffect(() => {
+    load().catch((err) => {
+      setError(err.message);
+      setReady(true);
+    });
+  }, []);
+
   return (
     <section>
       <div className="page-head">
         <div>
           <h2>Overview</h2>
-          <p>Mock snapshot of the Handoff pipeline. Evaluator and other platforms are not live yet.</p>
+          <p>Posts ranked by evaluator score. Highest first.</p>
         </div>
-        <span className="pill warn">Mock data</span>
+        <span className="pill ok">{posts.length} scored</span>
       </div>
 
-      <div className="pipeline">
-        {PIPELINE.map((step) => (
-          <div className="pipe" key={step}>
-            {step}
-          </div>
-        ))}
-      </div>
+      {error ? <p className="error">{error}</p> : null}
 
-      <div className="grid cols-2">
-        <div className="card">
-          <h3>Latest Reddit ingestion</h3>
-          <div className="pill">completed · 8 min ago</div>
-          <p className="muted" style={{ marginTop: 12 }}>
-            84 posts seen · 31 new · Chromium closed after the job.
-          </p>
-        </div>
-        <div className="card">
-          <h3>Evaluator</h3>
-          <div className="list">
-            <div className="row-item">
-              <span>Job ↔ skills</span>
-              <span className="stat">7</span>
-            </div>
-            <div className="row-item">
-              <span>Lead ↔ RhoQ / ThoughtSpace</span>
-              <span className="stat">16</span>
-            </div>
-            <div className="row-item">
-              <span>Content scoring</span>
-              <span className="stat">9</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid cols-3" style={{ marginTop: 16 }}>
-        {REDDIT.map((item) => (
-          <div className="card" key={item.label}>
-            <h3>Reddit · {item.label}</h3>
-            <div className="stat">{item.value}</div>
-            <p className="muted">{item.note}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid cols-2" style={{ marginTop: 16 }}>
-        {PLATFORMS.map((block) => (
-          <div className="card" key={block.title}>
-            <h3>{block.title}</h3>
-            <div className="list">
-              {block.items.map((item) => (
-                <div className="row-item" key={item}>
-                  <span>{item}</span>
-                  <span className="muted">—</span>
-                </div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <form className="form inline" onSubmit={(e) => e.preventDefault()}>
+          <label>
+            Category
+            <select
+              value={categoryId}
+              onChange={(e) => {
+                const next = e.target.value;
+                setCategoryId(next);
+                setError("");
+                load(next).catch((err) => setError(err.message));
+              }}
+            >
+              <option value="">All categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
               ))}
-            </div>
-          </div>
-        ))}
+            </select>
+          </label>
+        </form>
+      </div>
+
+      {ready && !error && posts.length === 0 ? (
+        <div className="banner">
+          No scored posts yet. Run the evaluator, then refresh this page.
+        </div>
+      ) : null}
+
+      <div className="list">
+        {posts.map((post) => {
+          const open = openId === post.id;
+          const scores = post.scores && typeof post.scores === "object" ? post.scores : {};
+          return (
+            <article className="card post-card" key={post.id}>
+              <div className="post-head">
+                <div className="stat">{formatScore(post.mean_score)}</div>
+                <div>
+                  <h3>{post.title || "(no title)"}</h3>
+                  <p className="muted">
+                    {post.category_name}
+                    {post.subreddit ? ` · r/${post.subreddit}` : ""}
+                    {post.author ? ` · u/${post.author}` : ""}
+                  </p>
+                </div>
+              </div>
+              {post.reason ? <p className="post-reason">{post.reason}</p> : null}
+              {Object.keys(scores).length ? (
+                <div className="score-pills">
+                  {Object.entries(scores).map(([key, value]) => (
+                    <span className="pill" key={key}>
+                      {key} {formatScore(value)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <div className="post-actions">
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setOpenId(open ? null : post.id)}
+                >
+                  {open ? "Hide body" : "Show body"}
+                </button>
+                {post.url ? (
+                  <a className="btn ghost" href={post.url} target="_blank" rel="noreferrer">
+                    Open post
+                  </a>
+                ) : null}
+              </div>
+              {open && post.body ? <pre className="post-body">{post.body}</pre> : null}
+              {open && !post.body ? <p className="muted">No body stored for this post.</p> : null}
+            </article>
+          );
+        })}
       </div>
     </section>
   );

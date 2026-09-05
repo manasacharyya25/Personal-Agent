@@ -80,12 +80,12 @@ python -m apps.evaluator.main
 python -m apps.evaluator.main --limit 20
 ```
 
-Scoring needs `LLM_API_KEY` (and optional `LLM_MODEL`). `--dump-prompts` does not.
+Scoring uses local Ollama (`LLM_MODEL` and `OLLAMA_BASE_URL` in `.env`). `--dump-prompts` does not.
 
 ## Out of this pass
 
 - Weighted scores
 - Purpose on search queries
 - RAG / knowledge bases in the evaluator
-- Showing scores on Overview (still mock)
+- Showing scores on Overview — live list ranked by `mean_score`
 - Per-post chat drafts

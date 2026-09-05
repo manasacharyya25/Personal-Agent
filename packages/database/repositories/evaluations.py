@@ -125,3 +125,37 @@ def upsert_evaluation(
         """,
         (post_id, category_id, Json(scores), mean_score, reason, job_id),
     )
+
+
+def list_evaluations(
+    db: Database,
+    *,
+    category_id: int | None = None,
+    limit: int = 100,
+) -> list[dict]:
+    return db.fetch_all(
+        """
+        SELECT
+            e.id,
+            e.post_id,
+            e.category_id,
+            e.scores,
+            e.mean_score,
+            e.reason,
+            e.evaluated_at,
+            p.reddit_post_id,
+            p.subreddit,
+            p.author,
+            p.title,
+            p.body,
+            p.url,
+            c.name AS category_name
+        FROM pa_post_evaluations e
+        JOIN pa_reddit_discovered_posts p ON p.id = e.post_id
+        JOIN pa_categories c ON c.id = e.category_id
+        WHERE (%s IS NULL OR e.category_id = %s)
+        ORDER BY e.mean_score DESC, e.evaluated_at DESC
+        LIMIT %s
+        """,
+        (category_id, category_id, limit),
+    )

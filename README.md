@@ -42,7 +42,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 — Overview and Chat are mock; Reddit config writes to the database.
+Open http://localhost:5173 — Overview lists scored posts; Reddit config writes to the database; Chat is mock.
 
 ## Evaluator
 
@@ -59,5 +59,5 @@ python -m apps.evaluator.main --migrate
 python -m apps.evaluator.main --limit 20
 ```
 
-Scoring requires `LLM_API_KEY` in `.env`.
+Scoring uses local Ollama (`qwen3:4b-instruct` at `http://localhost:11434` by default).
 
