@@ -12,8 +12,13 @@ def upsert_discovered_post(db: Database, post: ParsedPost) -> tuple[int, bool]:
             reddit_post_id, subreddit, author, title, body, url, created_at, metadata
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (reddit_post_id) DO NOTHING
-        RETURNING id
+        ON CONFLICT (reddit_post_id) DO UPDATE SET
+            body = CASE
+                WHEN EXCLUDED.body <> '' THEN EXCLUDED.body
+                ELSE pa_reddit_discovered_posts.body
+            END,
+            title = COALESCE(NULLIF(EXCLUDED.title, ''), pa_reddit_discovered_posts.title)
+        RETURNING id, (xmax = 0) AS inserted
         """,
         (
             post.reddit_post_id,
@@ -26,16 +31,9 @@ def upsert_discovered_post(db: Database, post: ParsedPost) -> tuple[int, bool]:
             Json(post.metadata),
         ),
     )
-    if row:
-        return row["id"], True
-
-    existing = db.fetch_one(
-        "SELECT id FROM pa_reddit_discovered_posts WHERE reddit_post_id = %s",
-        (post.reddit_post_id,),
-    )
-    if not existing:
+    if not row:
         raise RuntimeError(f"Post {post.reddit_post_id} missing after upsert")
-    return existing["id"], False
+    return row["id"], bool(row["inserted"])
 
 
 def add_discovery_method(

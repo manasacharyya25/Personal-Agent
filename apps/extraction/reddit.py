@@ -1,6 +1,8 @@
 """Scan subreddits and search queries; store posts; do not score relevance."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import random
+import time
 
 from packages.common.logger import get_logger
 from packages.database.database import Database
@@ -19,6 +21,9 @@ def run_reddit_ingestion(
     browser: RedditBrowser,
     job_id: int,
     max_pages: int,
+    post_delay_min: float = 5.0,
+    post_delay_max: float = 15.0,
+    subreddit_max_age_hours: float = 24.0,
 ) -> None:
     for source in source_repo.list_active_sources(db):
         logger.info("Scanning subreddit r/%s", source.subreddit)
@@ -35,6 +40,9 @@ def run_reddit_ingestion(
             max_pages=max_pages,
             discovery_method="subreddit",
             discovery_query=source.subreddit,
+            post_delay_min=post_delay_min,
+            post_delay_max=post_delay_max,
+            max_age_hours=subreddit_max_age_hours,
             save_pagination=lambda state, sid=source.id: source_repo.update_source_checkpoint(
                 db, sid, pagination_state=state
             ),
@@ -63,6 +71,9 @@ def run_reddit_ingestion(
             max_pages=max_pages,
             discovery_method="search",
             discovery_query=search.query,
+            post_delay_min=post_delay_min,
+            post_delay_max=post_delay_max,
+            max_age_hours=None,
             save_pagination=lambda state, qid=search.id: search_repo.update_search_checkpoint(
                 db, qid, pagination_state=state
             ),
@@ -89,6 +100,9 @@ def _crawl_target(
     max_pages: int,
     discovery_method: str,
     discovery_query: str,
+    post_delay_min: float,
+    post_delay_max: float,
+    max_age_hours: float | None,
     save_pagination,
     finish,
 ) -> None:
@@ -98,6 +112,9 @@ def _crawl_target(
     run_newest_created = _parse_iso(state.get("run_newest_created_at"))
     hit_checkpoint = False
     pages = 0
+    cutoff = None
+    if max_age_hours is not None:
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
 
     while url and pages < max_pages:
         posts, next_url = browser.fetch_listing(url)
@@ -123,8 +140,21 @@ def _crawl_target(
             ):
                 hit_checkpoint = True
                 break
+            if cutoff and _is_older_than(post.created_at, cutoff):
+                logger.info(
+                    "Reached posts older than %s hours; stopping this subreddit",
+                    max_age_hours,
+                )
+                hit_checkpoint = True
+                break
 
+            logger.info("Opening thread %s", post.reddit_post_id)
+            if post.permalink:
+                post.body = browser.fetch_post_body(post.permalink)
             _save_post(db, post, discovery_method, discovery_query, job_id)
+            delay = random.uniform(post_delay_min, post_delay_max)
+            logger.info("Waiting %.1fs before next post", delay)
+            time.sleep(delay)
 
         state = {
             "next_url": next_url,
@@ -143,6 +173,14 @@ def _crawl_target(
     first_run_capped = pages >= max_pages and not last_seen_post_id
     if caught_up or first_run_capped:
         finish(run_newest_id, run_newest_created)
+
+
+def _is_older_than(created_at, cutoff) -> bool:
+    if created_at is None:
+        return False
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    return created_at < cutoff
 
 
 def _save_post(

@@ -31,6 +31,8 @@ python -m apps.extraction.main --migrate
 python -m apps.extraction.main
 ```
 
+First Reddit login: set `PLAYWRIGHT_HEADLESS=false`, sign in when the window waits, then later runs reuse `data/playwright-reddit`. Subreddit scans only keep posts from the last 24 hours. There is a 5–15s pause between saved posts.
+
 ## Dashboard
 
 ```text
@@ -44,12 +46,18 @@ Open http://localhost:5173 — Overview and Chat are mock; Reddit config writes 
 
 ## Evaluator
 
-Fill purpose, prompt, examples, and criteria on each category (Reddit panel → Edit). Then:
+Fill purpose, evaluator prompt, and examples on each category (Reddit panel → Edit). Preview prompts without calling the LLM:
+
+```text
+python -m apps.evaluator.main --dump-prompts
+```
+
+Writes up to 10 mixed subreddit/search posts to `output/evaluator-prompts/`. Then score:
 
 ```text
 python -m apps.evaluator.main --migrate
 python -m apps.evaluator.main --limit 20
 ```
 
-Requires `LLM_API_KEY` in `.env`.
+Scoring requires `LLM_API_KEY` in `.env`.
 

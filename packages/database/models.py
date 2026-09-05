@@ -38,5 +38,6 @@ class ParsedPost:
     title: str
     body: str
     url: str
+    permalink: str
     created_at: datetime | None
     metadata: dict[str, Any]

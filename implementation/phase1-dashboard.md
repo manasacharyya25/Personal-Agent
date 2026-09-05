@@ -55,9 +55,17 @@ Cannot delete a category that still has sources or searches attached.
 
 Standalone agent thread. Fake replies. Not per-post yet. Layout should be easy to point at FastAPI later.
 
+
+## 4. To run
+```
+uvicorn apps.agent.main:app --reload
+cd dashboard/frontend && npm run dev
+```
+
 ## Out of this pass
 
 - Running the scraper from the UI
 - Per-post chat / drafts
 - Evaluator
 - Actor / posting
+

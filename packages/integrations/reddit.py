@@ -7,10 +7,13 @@ import time
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
 
+from packages.common.logger import get_logger
 from packages.database.models import ParsedPost
 
+logger = get_logger(__name__)
 
 OLD_REDDIT = "https://old.reddit.com"
+LISTING_SELECTOR = ".thing.link[data-fullname]"
 
 
 class RedditPageError(Exception):
@@ -36,6 +39,34 @@ class RedditBrowser:
         q = quote_plus(query)
         t = time_filter or "week"
         return f"{OLD_REDDIT}/search?q={q}&sort=new&restrict_sr=&t={t}"
+
+    def ensure_session(self) -> None:
+        self.page.goto(f"{OLD_REDDIT}/", wait_until="domcontentloaded", timeout=60000)
+        if self._listing_visible():
+            logger.info("Reddit session already logged in")
+            return
+        self.wait_until_logged_in()
+
+    def wait_until_logged_in(self) -> None:
+        logger.info(
+            "Reddit login required. Log in in the browser window; "
+            "the scraper waits until a post listing appears."
+        )
+        self.page.wait_for_selector(LISTING_SELECTOR, timeout=0)
+        logger.info("Logged in; listing is visible")
+
+    def _listing_visible(self) -> bool:
+        return self.page.locator(LISTING_SELECTOR).count() > 0
+
+    def _looks_like_login(self) -> bool:
+        url = (self.page.url or "").lower()
+        if "login" in url or "register" in url:
+            return True
+        if self.page.locator("input[name='user']").count() > 0:
+            return True
+        if self.page.locator("#login_login-main, form#login").count() > 0:
+            return True
+        return False
 
     def fetch_listing(self, url: str) -> tuple[list[ParsedPost], str | None]:
         self._goto_with_retry(url)
@@ -78,6 +109,9 @@ class RedditBrowser:
                 snippet = (self.page.content() or "")[:4000].lower()
                 if "whoa there" in snippet or "request to open reddit" in snippet:
                     raise RedditPageError(f"Reddit blocked or rate-limited: {url}")
+                if self._looks_like_login() and not self._listing_visible():
+                    self.wait_until_logged_in()
+                    self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
                 return
             except RedditPageError:
                 raise
@@ -112,6 +146,26 @@ class RedditBrowser:
             title=(item.get("title") or "").strip(),
             body=(item.get("body") or "").strip(),
             url=url,
+            permalink=permalink,
             created_at=created_at,
             metadata={"score": item.get("score"), "source": "old.reddit.com"},
         )
+
+    def thread_url(self, permalink: str) -> str:
+        if permalink.startswith("http"):
+            return permalink.replace("https://www.reddit.com", OLD_REDDIT)
+        return urljoin(OLD_REDDIT, permalink)
+
+    def fetch_post_body(self, permalink: str) -> str:
+        url = self.thread_url(permalink)
+        logger.info("Opening post %s", url)
+        self._goto_with_retry(url)
+        time.sleep(self.request_delay_seconds)
+        body = self.page.evaluate(
+            """() => {
+                const op = document.querySelector('.thing.link .usertext-body .md')
+                    || document.querySelector('.thing.link .usertext-body');
+                return op ? op.innerText.trim() : '';
+            }"""
+        )
+        return (body or "").strip()

@@ -18,6 +18,11 @@ from .reddit import run_reddit_ingestion
 logger = get_logger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATIONS = ROOT / "migrations"
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/122.0.0.0 Safari/537.36"
+)
 
 
 def migrate(db: Database) -> None:
@@ -31,30 +36,51 @@ def scrape(db: Database) -> None:
     job_repo.mark_running(db, job_id)
     logger.info("Ingestion job %s running", job_id)
 
+    profile = Path(settings.PLAYWRIGHT_USER_DATA_DIR)
+    if not profile.is_absolute():
+        profile = ROOT / profile
+    profile.mkdir(parents=True, exist_ok=True)
+
+    if settings.PLAYWRIGHT_HEADLESS:
+        logger.info(
+            "Headless is on. If Reddit asks for login, set PLAYWRIGHT_HEADLESS=false "
+            "for this run so you can sign in; the profile is reused next time."
+        )
+
     try:
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=settings.PLAYWRIGHT_HEADLESS)
+            # context = playwright.chromium.launch_persistent_context(
+            #     user_data_dir=str(profile),
+            #     headless=settings.PLAYWRIGHT_HEADLESS,
+            #     viewport={"width": 1280, "height": 800},
+            #     user_agent=USER_AGENT,
+            # )
+            context = playwright.chromium.launch_persistent_context(
+                user_data_dir=str(profile),
+                channel="chrome",  # real Chrome
+                headless=False,
+                ignore_default_args=["--enable-automation"],
+                args=["--disable-blink-features=AutomationControlled"],
+            )
             try:
-                page = browser.new_page(
-                    user_agent=(
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/122.0.0.0 Safari/537.36"
-                    )
-                )
+                page = context.pages[0] if context.pages else context.new_page()
                 reddit = RedditBrowser(
                     page,
                     request_delay_seconds=settings.REDDIT_REQUEST_DELAY_SECONDS,
                     max_retries=settings.REDDIT_MAX_RETRIES,
                 )
+                reddit.ensure_session()
                 run_reddit_ingestion(
                     db,
                     reddit,
                     job_id,
                     max_pages=settings.REDDIT_MAX_PAGES_PER_TARGET,
+                    post_delay_min=settings.REDDIT_POST_DELAY_MIN_SECONDS,
+                    post_delay_max=settings.REDDIT_POST_DELAY_MAX_SECONDS,
+                    subreddit_max_age_hours=settings.REDDIT_SUBREDDIT_MAX_AGE_HOURS,
                 )
             finally:
-                browser.close()
+                context.close()
         job_repo.mark_completed(db, job_id)
         logger.info("Ingestion job %s completed", job_id)
     except Exception:

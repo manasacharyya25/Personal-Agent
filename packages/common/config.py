@@ -10,9 +10,13 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "gpt-4o-mini"
 
     REDDIT_REQUEST_DELAY_SECONDS: float = 3.0
+    REDDIT_POST_DELAY_MIN_SECONDS: float = 5.0
+    REDDIT_POST_DELAY_MAX_SECONDS: float = 15.0
+    REDDIT_SUBREDDIT_MAX_AGE_HOURS: float = 24.0
     REDDIT_MAX_RETRIES: int = 3
     REDDIT_MAX_PAGES_PER_TARGET: int = 5
     PLAYWRIGHT_HEADLESS: bool = True
+    PLAYWRIGHT_USER_DATA_DIR: str = "data/playwright-reddit"
 
     model_config = SettingsConfigDict(
         env_file=".env",

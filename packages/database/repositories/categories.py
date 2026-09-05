@@ -38,8 +38,6 @@ def list_ready_categories(db: Database) -> list[dict]:
         WHERE active = TRUE
           AND prompt IS NOT NULL
           AND btrim(prompt) <> ''
-          AND jsonb_typeof(evaluation_metrics) = 'array'
-          AND jsonb_array_length(evaluation_metrics) > 0
         ORDER BY name ASC
         """
     )

@@ -12,7 +12,7 @@ from packages.database.database import Database
 from packages.database.repositories import jobs as job_repo
 from packages.llm.client import LlmClient
 
-from .service import run_evaluation
+from .service import dump_prompts, run_evaluation
 
 logger = get_logger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +21,14 @@ ROOT = Path(__file__).resolve().parents[2]
 def migrate(db: Database) -> None:
     applied = db.apply_all_migrations(ROOT / "migrations")
     logger.info("Applied %s", ", ".join(applied))
+
+
+def dump_prompt_files(db: Database, limit: int, out_dir: Path) -> None:
+    written = dump_prompts(db, out_dir, limit)
+    if not written:
+        logger.warning("No ready post/category pairs to dump")
+        return
+    logger.info("Wrote %s prompt files under %s", len(written), out_dir)
 
 
 def evaluate(db: Database, limit: int) -> None:
@@ -46,7 +54,18 @@ def evaluate(db: Database, limit: int) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reddit post evaluator")
     parser.add_argument("--migrate", action="store_true")
-    parser.add_argument("--limit", type=int, default=50)
+    parser.add_argument(
+        "--dump-prompts",
+        action="store_true",
+        help="Write evaluator prompts to text files; do not call the LLM",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=ROOT / "output" / "evaluator-prompts",
+        help="Folder for --dump-prompts files",
+    )
+    parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args()
 
     settings = get_settings()
@@ -55,8 +74,10 @@ def main() -> None:
     try:
         if args.migrate:
             migrate(db)
+        elif args.dump_prompts:
+            dump_prompt_files(db, args.limit or 10, args.out)
         else:
-            evaluate(db, args.limit)
+            evaluate(db, args.limit or 50)
     finally:
         db.close()
 
