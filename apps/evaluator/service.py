@@ -2,6 +2,7 @@ import re
 from itertools import zip_longest
 from pathlib import Path
 
+from apps.evaluator.models.PostEvaluationResult import PostEvaluationResult
 from packages.common.logger import get_logger
 from packages.database.database import Database
 from packages.database.repositories import evaluations as eval_repo
@@ -132,15 +133,23 @@ def run_evaluation(
     done = 0
     for pair in pairs:
         prompt = build_prompt(pair)
-        result = llm.complete_json(prompt)
-        reason = str(result.get("reason") or "")
-        scores = {}
-        raw = result.get("user_interest")
-        try:
-            scores["user_interest"] = float(raw)
-        except (TypeError, ValueError):
-            pass
-        mean = mean_score(scores)
+
+        structured_output = llm.evaluate(prompt=prompt, schema=PostEvaluationResult)
+
+        # result = llm.complete_json(prompt)
+        # reason = str(result.get("reason") or "")
+        # scores = {}
+        # raw = result.get("user_interest")
+        # try:
+        #     scores["user_interest"] = float(raw)
+        # except (TypeError, ValueError):
+        #     pass
+        # mean = mean_score(scores)
+
+        scores = {"user_interest": structured_output.user_interest}
+        reason = structured_output.reason
+        mean = structured_output.user_interest
+
         eval_repo.upsert_evaluation(
             db,
             post_id=pair["post_id"],

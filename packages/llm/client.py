@@ -1,9 +1,13 @@
 import json
 import re
 
+from typing import Type, TypeVar
+from pydantic import BaseModel
+
 from langchain_core.messages import HumanMessage
 from langchain_ollama import ChatOllama
 
+T = TypeVar("T", bound=BaseModel)
 
 def _ollama_base_url(url: str) -> str:
     base = (url or "").strip().rstrip("/")
@@ -56,3 +60,8 @@ class LlmClient:
     def complete_json(self, prompt: str) -> dict:
         response = self.model.invoke([HumanMessage(content=prompt)])
         return _parse_json(_content_text(response.content))
+
+    def evaluate(self, prompt: str, schema: Type[T]) -> T:
+        structured_llm = self.model.with_structured_output(schema)
+        response = structured_llm.invoke([HumanMessage(prompt)])
+        return response

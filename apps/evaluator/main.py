@@ -63,29 +63,20 @@ def evaluate(db: Database, limit: int, category: str | None = None) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reddit post evaluator")
-    parser.add_argument("--migrate", action="store_true")
-    parser.add_argument(
-        "--dump-prompts",
-        action="store_true",
-        help="Write evaluator prompts to text files; do not call the LLM",
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        default=ROOT / "output" / "evaluator-prompts",
-        help="Folder for --dump-prompts files",
-    )
-    parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument(
-        "--category",
-        help="Only evaluate posts for this category name",
-    )
+    parser = argparse.ArgumentParser(description="Post evaluator")
+
+    parser.add_argument("--migrate", action="store_true", help="Migrate DB Changes")
+    parser.add_argument("--dump-prompts", action="store_true", help="Write evaluator prompts to text files; do not call the LLM")
+    parser.add_argument("--out", type=Path, default=ROOT / "output" / "evaluator-prompts", help="Folder for --dump-prompts files")
+    parser.add_argument("--limit", type=int, default=None, help="Number of posts to evaluate")
+    parser.add_argument("--category", help="Only evaluate posts for this category name")
+
     args = parser.parse_args()
 
     settings = get_settings()
     db = Database(settings.DB_CONNECTION_STRING)
     db.connect()
+
     try:
         if args.migrate:
             migrate(db)
